@@ -108,26 +108,23 @@ def parse_expected_result(raw: str) -> Result:
         case "Z":
             return Result.WIN
 
-    raise ValueError(f"unexpected state {raw=}")
+    raise ValueError(f"unexpected state {strategy=}, {oponent=}")
 
 
-def main():
-    with open("day2.input.txt", "r") as f:
-        total_score = 0
+with open("day2.input.txt", "r") as f:
+    total_score = 0
 
-        for line in f:
-            line = line.strip()
-            oponent, own = line.split(" ")
+    for line in f:
+        line = line.strip()
+        oponent, strategy = line.split(" ")
 
-            oponent = parse_opponent(oponent)
-            own = parse_own(own)
+        expected_result = parse_expected_result(strategy)
+        oponent = parse_opponent(oponent)
 
-            result = winner(own, oponent)
+        own = own_move(oponent, expected_result)
 
-            total_score += symbol_points(own) + result_points(result)
+        result = expected_result
 
-    print(total_score)
+        total_score += symbol_points(own) + result_points(result)
 
-
-if __name__ == "__main__":
-    main()
+print(total_score)

@@ -1,4 +1,5 @@
 # Day 4
+# Day 4
 import dataclasses
 
 
@@ -8,6 +9,9 @@ class Range:
 
     def __contains__(self, other: "Range") -> bool:
         return self.section_ids | other.section_ids == self.section_ids
+
+    def overlap(self, other: "Range") -> bool:
+        return len(self.section_ids & other.section_ids) > 0
 
 
 def parse_range(raw: str) -> Range:
@@ -23,13 +27,13 @@ def parse_ranges(line: str) -> tuple[Range, Range]:
 
 def main():
     with open("day4.input.txt", "r") as f:
-        fully_contained = 0
+        overlapped = 0
         for line in f:
             range1, range2 = parse_ranges(line)
-            if range1 in range2 or range2 in range1:
-                fully_contained += 1
+            if range1.overlap(range2):
+                overlapped += 1
 
-        print(fully_contained)
+        print(overlapped)
 
 
 if __name__ == "__main__":

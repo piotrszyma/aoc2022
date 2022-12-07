@@ -1,7 +1,7 @@
 # Day 7
 from dataclasses import dataclass
 from typing import Iterable, Union
-from functools import cache
+from functools import cached_property
 
 
 @dataclass
@@ -16,16 +16,9 @@ class Dir:
     content: list[Union[File, "Dir"]]
     parent: "Dir"
 
-    _cached_size: int | None = None
-
-    @property
+    @cached_property
     def size(self) -> int:
-        if self._cached_size is not None:
-            return self._cached_size
-
-        self._cached_size = sum(c.size for c in self.content)
-
-        return self._cached_size
+        return sum(c.size for c in self.content)
 
 
 @dataclass

@@ -1,6 +1,7 @@
 # Day 7
 from dataclasses import dataclass
 from typing import Iterable, Union
+from functools import cache
 
 
 @dataclass
@@ -15,9 +16,16 @@ class Dir:
     content: list[Union[File, "Dir"]]
     parent: "Dir"
 
+    _cached_size: int | None = None
+
     @property
     def size(self) -> int:
-        return sum(c.size for c in self.content)
+        if self._cached_size is not None:
+            return self._cached_size
+
+        self._cached_size = sum(c.size for c in self.content)
+
+        return self._cached_size
 
 
 @dataclass
@@ -33,7 +41,7 @@ def get_dir_sizes(root: Dir) -> Iterable[int]:
 
 
 def main():
-    with open("day7.input.test.txt", "r") as f:
+    with open("day7.input.txt", "r") as f:
         root = RootDir(name="/", content=[])
         cwd = root
 

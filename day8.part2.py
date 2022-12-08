@@ -37,7 +37,7 @@ def main():
             row = [int(cell) for cell in line]
             matrix.append(row)
 
-        scenic_score = -1
+        max_scenic_score = -1
 
         for row_idx, row in enumerate(matrix):
             for col_idx, _ in enumerate(row):
@@ -48,9 +48,9 @@ def main():
 
                 this_scenic_score = left_score * right_score * up_score * down_score
 
-                scenic_score = max(scenic_score, this_scenic_score)
+                max_scenic_score = max(max_scenic_score, this_scenic_score)
 
-        print(scenic_score)
+        print(max_scenic_score)
 
 
 if __name__ == "__main__":

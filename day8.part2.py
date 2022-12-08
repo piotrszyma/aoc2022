@@ -32,14 +32,10 @@ def main():
     with open("day8.input.txt", "r") as f:
         matrix: list[list[int]] = []
 
-        line = []
-
         for line in f:
             line = line.strip()
             row = [int(cell) for cell in line]
             matrix.append(row)
-
-        assert line
 
         scenic_score = -1
 

@@ -7,7 +7,7 @@ def print_visibility(v):
 
 
 def main():
-    with open("day8.input.test.txt", "r") as f:
+    with open("day8.input.txt", "r") as f:
         matrix: list[list[int]] = []
         visibility: list[list[bool]] = []
 

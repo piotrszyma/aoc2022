@@ -15,6 +15,14 @@ def is_adjancent(p1: tuple[int, int], p2: tuple[int, int]) -> bool:
     )
 
 
+def is_non_diagonal_non_adjacent(p1: tuple[int, int], p2: tuple[int, int]):
+    (x1, y1), (x2, y2) = p1, p2
+    vertical = abs(x1 - x2) == 2 and abs(y1 - y2) == 0
+    horizontal = abs(x1 - x2) == 0 and abs(y1 - y2) == 2
+
+    return horizontal or vertical
+
+
 def apply_move(
     pos: tuple[int, int],
     move: Move,
@@ -57,6 +65,8 @@ def move_rope(rope: list[tuple[int, int]], move: Move) -> list[tuple[int, int]]:
         new_H = rope[idx]
         if is_adjancent(new_H, old_T):
             new_T = old_T
+        elif is_non_diagonal_non_adjacent(new_H, old_T):
+            new_T = old_H
         else:
             new_T = old_H
 
@@ -64,8 +74,12 @@ def move_rope(rope: list[tuple[int, int]], move: Move) -> list[tuple[int, int]]:
     return rope
 
 
+LEN = 10
+DIMS = 6
+
+
 def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
-    rope: list[tuple[int, int]] = [(0, 0) for _ in range(10)]
+    rope: list[tuple[int, int]] = [(0, 0) for _ in range(LEN)]
 
     visited_by_last = set()
     visited_by_last.add(rope[-1])
@@ -126,8 +140,6 @@ def moves_from_lines(file: TextIOWrapper) -> Iterable[Move]:
 # .5....
 # 6.....  (6 covers 7, 8, 9, s)
 
-DIMS = 10
-
 
 def print_state(rope: list[tuple[int, int]]):
     rope_m = {}
@@ -152,7 +164,7 @@ def print_state(rope: list[tuple[int, int]]):
 
 
 def main():
-    with open("day9.input.test2.txt", "r") as f:
+    with open("day9.input.test.txt", "r") as f:
         visited_by_tail = consume_moves(moves_from_lines(f))
 
     # print(len(visited_by_tail))

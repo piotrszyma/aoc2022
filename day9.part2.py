@@ -43,6 +43,27 @@ def is_non_diagonal_move(p1: tuple[int, int], p2: tuple[int, int]) -> bool:
     return (x1 == x2 and y1 != y2) or (x1 != x2 and y1 == y2)
 
 
+def move_rope(rope: list[tuple[int, int]], move: Move) -> list[tuple[int, int]]:
+    old_rope = [*rope]
+
+    old_H = rope[0]
+    new_H = apply_move(old_H, move)
+    rope[0] = new_H
+
+    for idx, _ in enumerate(rope[:-1]):
+        old_H = old_rope[idx]
+        old_T = rope[idx + 1]
+
+        new_H = rope[idx]
+        if is_adjancent(new_H, old_T):
+            new_T = old_T
+        else:
+            new_T = old_H
+
+        rope[idx + 1] = new_T
+    return rope
+
+
 def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
     rope: list[tuple[int, int]] = [(0, 0) for _ in range(10)]
 
@@ -50,50 +71,11 @@ def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
     visited_by_last.add(rope[-1])
 
     for move_num, move in enumerate(moves):
-        old_rope = [*rope]
-        old_H = rope[0]
-        old_T = rope[1]
-        new_H = apply_move(old_H, move)
-
-        if is_adjancent(new_H, old_T):
-            new_T = old_T
-        else:
-            new_T = old_H
-
-        rope[0] = new_H
-        rope[1] = new_T
-        # print_state(rope)
-        # print(rope)
-        # input()
-
-        for idx, _ in enumerate(rope[:-1]):
-            if idx == 0:
-                continue
-
-            old_H = old_rope[idx]
-            old_T = old_rope[idx + 1]
-            new_H = rope[idx]  # Head was moved in previous iteration step.
-
-            if is_adjancent(new_H, old_T):
-                new_T = old_T
-            elif is_non_diagonal_move(old_H, new_H):
-                new_T = old_H
-            else:  # new case
-                x1, y1 = old_H
-                x2, y2 = new_H
-                x3, y3 = old_T
-                x_diff = 1 if x2 > x1 else -1
-                y_diff = 1 if y2 > y1 else -1
-
-                new_T = x3 + x_diff, y3 + y_diff
-
-            rope[idx] = new_H
-            rope[idx + 1] = new_T
-            # print_state(rope)
-            # print(rope)
-            # input()
-
+        rope = move_rope(rope, move)
         visited_by_last.add(rope[-1])
+        print_state(rope)
+        print(rope)
+        input()
 
     return visited_by_last
 

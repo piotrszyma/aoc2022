@@ -9,9 +9,9 @@ def is_adjancent(p1: tuple[int, int], p2: tuple[int, int]) -> bool:
     (x1, y1), (x2, y2) = p1, p2
     return (
         (x1 == x2 and y1 == y2)
-        or (x1 == x2 and abs(y1 - y2) == 1)
-        or (y1 == y2 and abs(x1 - x2) == 1)  # same row
-        or (abs(x1 - x2) == abs(y1 - y2) == 1)  # same col  # diagonally adjacent
+        or (x1 == x2 and abs(y1 - y2) == 1)  # same row
+        or (y1 == y2 and abs(x1 - x2) == 1)  # same col
+        or (abs(x1 - x2) == abs(y1 - y2) == 1)  # diagonally adjacent
     )
 
 
@@ -35,7 +35,12 @@ def apply_move(
 
 def is_diagonal(p1: tuple[int, int], p2: tuple[int, int]) -> bool:
     (x1, y1), (x2, y2) = p1, p2
-    return abs(x1 - x2) == 2 or abs(y1 - y2) == 2
+    return abs(x1 - x2) == 2 and abs(y1 - y2) == 2
+
+
+def is_non_diagonal_move(p1: tuple[int, int], p2: tuple[int, int]) -> bool:
+    (x1, y1), (x2, y2) = p1, p2
+    return (x1 == x2 and y1 != y2) or (x1 != x2 and y1 == y2)
 
 
 def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
@@ -44,7 +49,7 @@ def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
     visited_by_last = set()
     visited_by_last.add(rope[-1])
 
-    for move in moves:
+    for move_num, move in enumerate(moves):
         old_rope = [*rope]
         old_H = rope[0]
         old_T = rope[1]
@@ -68,30 +73,27 @@ def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
             old_H = old_rope[idx]
             old_T = old_rope[idx + 1]
             new_H = rope[idx]  # Head was moved in previous iteration step.
-            # if idx == 1:
-            #     breakpoint()
 
             if is_adjancent(new_H, old_T):
                 new_T = old_T
-            elif is_diagonal(new_H, old_T):  # non adjacent & diagonal move
-                # breakpoint()
+            elif is_non_diagonal_move(old_H, new_H):
+                new_T = old_H
+            else:  # new case
                 x1, y1 = old_H
                 x2, y2 = new_H
-                x_diff = x2 - x1
-                y_diff = y2 - y1
                 x3, y3 = old_T
+                x_diff = 1 if x2 > x1 else -1
+                y_diff = 1 if y2 > y1 else -1
+
                 new_T = x3 + x_diff, y3 + y_diff
-            else:
-                new_T = old_H
 
             rope[idx] = new_H
             rope[idx + 1] = new_T
+            # print_state(rope)
+            # print(rope)
+            # input()
 
-        # breakpoint()  # After iteration
         visited_by_last.add(rope[-1])
-        print_state(rope)
-        print(rope)
-        input()
 
     return visited_by_last
 
@@ -130,12 +132,26 @@ def moves_from_lines(file: TextIOWrapper) -> Iterable[Move]:
 # .4321.
 # 5.....  (5 covers 6, 7, 8, 9, s)
 
+# ......
+# ....H.
+# ....1.
+# .432..
+# 5.....  (5 covers 6, 7, 8, 9, s)
+
+# ....H.
+# ....1.
+# ..432.
+# .5....
+# 6.....  (6 covers 7, 8, 9, s)
+
 DIMS = 10
 
 
 def print_state(rope: list[tuple[int, int]]):
     rope_m = {}
     for idx, pos in enumerate(rope):
+        if pos in rope_m:
+            continue
         rope_m[pos] = idx
 
     dims = DIMS
@@ -154,7 +170,7 @@ def print_state(rope: list[tuple[int, int]]):
 
 
 def main():
-    with open("day9.input.test.txt", "r") as f:
+    with open("day9.input.test2.txt", "r") as f:
         visited_by_tail = consume_moves(moves_from_lines(f))
 
     # print(len(visited_by_tail))

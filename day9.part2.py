@@ -82,7 +82,7 @@ def consume_moves(moves: Iterable[Move]) -> set[tuple[int, int]]:
     visited_by_last = set()
     visited_by_last.add(rope[-1])
 
-    for move_num, move in enumerate(moves):
+    for move in moves:
         print_state(rope)
         rope = move_rope(rope, move)
         visited_by_last.add(rope[-1])

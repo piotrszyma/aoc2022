@@ -1,7 +1,10 @@
 # Day 11
+import collections
 from io import TextIOWrapper
 import operator
 from typing import Callable, Iterable
+
+DEBUG = True
 
 
 class Monkey:
@@ -15,6 +18,11 @@ class Monkey:
         monkey_id_if_false: int,
     ):
         self.id = monkey_id
+        self.items = worry_levels
+        self.operation = operation
+        self.test = test
+        self.monkey_id_if_true = monkey_id_if_true
+        self.monkey_id_if_false = monkey_id_if_false
 
     def __repr__(self) -> str:
         return f"Monkey<id={self.id}>"
@@ -44,12 +52,12 @@ def _get_operation(line: str) -> Callable[[int], int]:
     def operation(old: int) -> int:
         args = []
         if left.isnumeric():
-            args.append(left)
+            args.append(int(left))
         else:
             args.append(old)
 
         if right.isnumeric():
-            args.append(right)
+            args.append(int(right))
         else:
             args.append(old)
 
@@ -67,7 +75,7 @@ def _get_test(line: str) -> Callable[[int], bool]:
 
 def monkey_from_lines(lines: list[str]) -> Monkey:
     monkey_id = _get_monkey_id(lines[0])
-    start_items = _get_starting_items(lines[1])
+    worry_levels = _get_starting_items(lines[1])
     operation = _get_operation(lines[2])
     test = _get_test(lines[3])
     monkey_if_true = int(lines[4][-1])
@@ -75,11 +83,11 @@ def monkey_from_lines(lines: list[str]) -> Monkey:
 
     return Monkey(
         monkey_id=monkey_id,
-        worry_levels=[],
-        operation=lambda x: x,
-        test=lambda x: True,
-        monkey_id_if_true=1,
-        monkey_id_if_false=1,
+        worry_levels=worry_levels,
+        operation=operation,
+        test=test,
+        monkey_id_if_true=monkey_if_true,
+        monkey_id_if_false=monkey_if_false,
     )
 
 
@@ -100,12 +108,58 @@ def chunked(iterable: Iterable[str], max_chunk_size: int) -> Iterable[list[str]]
     yield chunk
 
 
+def print_debug(*args):
+    if not DEBUG:
+        return
+
+    print(*args)
+
+
 def main():
-    monkeys = []
-    with open("day11.input.test.txt", "r") as f:
+    monkeys: list[Monkey] = []
+    with open("day11.input.txt", "r") as f:
         for lines in chunked(stripped(f), max_chunk_size=7):
             monkey = monkey_from_lines(lines)
             monkeys.append(monkey)
+
+    rounds = 20
+    inspects_count = collections.Counter()
+
+    for _ in range(rounds):
+        for monkey in monkeys:
+            old_items = monkey.items
+
+            print_debug(f"Monkey {monkey.id}:")
+            for item in old_items:
+                inspects_count[monkey.id] += 1
+                print_debug(f"\tMonkey inspects an item with a worry level of {item}.")
+                new_level = monkey.operation(item)
+                print_debug(f"\t\tMonkey operation result = {new_level}.")
+                new_level //= 3
+                print_debug(
+                    f"\t\tMonkey gets bored with item. Worry level is divided by 3 to {new_level}"
+                )
+
+                if monkey.test(new_level) is True:
+                    print_debug(f"\t\tCurrent worry level passes the test.")
+                    monkeys[monkey.monkey_id_if_true].items.append(new_level)
+                    print_debug(
+                        f"\t\tItem with worry level {new_level} is thrown to monkey {monkey.monkey_id_if_true}"
+                    )
+                else:
+                    print_debug(f"\t\tCurrent worry level does not pass the test.")
+                    monkeys[monkey.monkey_id_if_false].items.append(new_level)
+                    print_debug(
+                        f"\t\tItem with worry level {new_level} is thrown to monkey {monkey.monkey_id_if_false}"
+                    )
+
+            monkey.items = []
+    for monkey in monkeys:
+        print_debug(f"Monkey {monkey.id}: {monkey.items}")
+
+    print_debug(inspects_count)
+    (k, v1), (v, v2) = inspects_count.most_common(2)
+    print_debug(v1 * v2)
 
 
 if __name__ == "__main__":

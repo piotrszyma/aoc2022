@@ -1,10 +1,9 @@
 # Day 11
 import collections
-from io import TextIOWrapper
 import operator
 from typing import Callable, Iterable
 
-DEBUG = True
+DEBUG = False
 
 
 class Monkey:
@@ -159,7 +158,7 @@ def main():
 
     print_debug(inspects_count)
     (k, v1), (v, v2) = inspects_count.most_common(2)
-    print_debug(v1 * v2)
+    print(v1 * v2)
 
 
 if __name__ == "__main__":

@@ -97,8 +97,9 @@ def main():
     to_visit: set[Coord] = {start}
     visited: set[Coord] = set()
     parents: dict[Coord, Coord] = {}
+    current = None
 
-    while True:
+    while to_visit:
         current = to_visit.pop()
 
         if current == end:
@@ -111,6 +112,8 @@ def main():
             visited.add(el)
             to_visit.add(el)
             parents[el] = current
+
+    assert current is not None
 
     path = [current]
     curr = current

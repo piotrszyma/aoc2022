@@ -23,10 +23,11 @@ def comparator(left: Content, right: Content) -> Literal[-1, 0, 1]:
     return is_valid
 
 
-def is_valid_order(left: Content, right: Content, indent=0) -> Literal[-1, 0, 1] | None:
-    if left == right:
-        return 0
+LEFT_SMALLER = -1
+LEFT_BIGGER = 1
 
+
+def is_valid_order(left: Content, right: Content, indent=0) -> Literal[-1, 0, 1] | None:
     print_debug("\t" * indent + f"Compare {left} vs {right}")
     t0 = type(left)
     t1 = type(right)
@@ -48,13 +49,13 @@ def is_valid_order(left: Content, right: Content, indent=0) -> Literal[-1, 0, 1]
                 "\t" * indent
                 + "Left side is smaller, so inputs are IN THE RIGHT ORDER 1"
             )
-            return -1
+            return LEFT_SMALLER
         elif left > right:
             print_debug(
                 "\t" * indent
                 + "Right side is smaller, so inputs are NOT in the right order 1"
             )
-            return 1
+            return LEFT_BIGGER
         else:
             return None
     elif isinstance(left, list) and isinstance(right, list):
@@ -69,13 +70,13 @@ def is_valid_order(left: Content, right: Content, indent=0) -> Literal[-1, 0, 1]
                 "\t" * indent
                 + "Right side run out of items, so inputs are NOT in the right order."
             )
-            return 1
+            return LEFT_BIGGER
         elif len(right) > len(left):  # left runs of order first
             print_debug(
                 "\t" * indent
                 + "Left side run out of items, so inputs are IN THE RIGHT ORDER"
             )
-            return -1
+            return LEFT_SMALLER
         else:
             return None  # Same length, no way to determine order
     else:

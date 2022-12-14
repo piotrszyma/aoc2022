@@ -64,7 +64,9 @@ def points_from_line(line: str) -> Iterable[Point]:
 # rows
 
 
-def next_sand_pos(cave: dict[Point, Type], start: Point, lowest_y: int) -> Point | None:
+def next_sand_pos(
+    cave: dict[Point, Type], start: Point, deepest_y: int
+) -> Point | None:
     x, y = start
 
     while True:
@@ -86,7 +88,7 @@ def next_sand_pos(cave: dict[Point, Type], start: Point, lowest_y: int) -> Point
         else:
             break
 
-        if y >= lowest_y:
+        if y >= deepest_y:
             return None
 
     return (x, y)
@@ -117,17 +119,19 @@ def print_sand(cave: dict[Point, Type]):
 def main():
     cave: dict[Point, Type] = {}
     start: Point = (500, 0)
-    lowest_y = start[1]
+    x, y = start
+    deepest_y = y
 
     with open("day14.input.txt", "r") as f:
         for line in f:
             for point in points_from_line(line.strip()):
                 cave[point] = Type.ROCK
-                lowest_y = max(lowest_y, point[0])
+                x, y = point
+                deepest_y = max(deepest_y, y)
 
     count = 0
     while True:
-        next_sand = next_sand_pos(cave, start, lowest_y)
+        next_sand = next_sand_pos(cave, start, deepest_y)
         if next_sand is None:
             break
 

@@ -38,10 +38,11 @@ def dist_manh(a: Point, b: Point) -> int:
 
 def main():
     scans: list[Scan] = []
-    # SEARCHED_Y = 10
-    SEARCHED_Y = 2_000_000
+    SEARCHED_Y = 10
+    # SEARCHED_Y = 2_000_000
+    coord_min, coord_max = 0, 20
 
-    with open("day15.input.txt", "r") as f:
+    with open("day15.input.test.txt", "r") as f:
         for line in f:
             line = line.strip()
             match = RE_LINE.search(line)
@@ -65,24 +66,27 @@ def main():
 
         dist = dist_manh(sensor, beacon)
 
-        highest_y = sensor.y - dist  # highest = smallest
-        lowest_y = sensor.y + dist  # lowerst = biggest
+        highest_y = max(sensor.y - dist, 0)  # highest = smallest
+        lowest_y = min(sensor.y + dist, coord_max)  # lowerst = biggest
 
-        if not (highest_y <= SEARCHED_Y <= lowest_y):
-            continue
-
-        leftest_x = sensor.x - dist
-        rightest_x = sensor.x + dist
+        leftest_x = max(sensor.x - dist, 0)  # leftest = smallest
+        rightest_x = min(sensor.x + dist, coord_max)  # rightest = biggest
 
         for x in range(leftest_x, rightest_x + 1):
-            point_on_y = Point(x, SEARCHED_Y)
+            for y in range(highest_y, lowest_y + 1):
+                if (x, y) in marked_points:
+                    continue
 
-            if point_on_y == beacon:
-                continue
+                point_on_y = Point(x, y)
 
-            dist_x = dist_manh(sensor, point_on_y)
-            if dist_x <= dist:
-                marked_points.add(point_on_y)
+                dist_x = dist_manh(sensor, point_on_y)
+                if dist_x <= dist:
+                    marked_points.add(point_on_y)
+
+    for x in range(coord_min, coord_max + 1):
+        for y in range(coord_min, coord_max + 1):
+            if (x, y) not in marked_points:
+                print((x, y))
 
     print(len(marked_points))
 

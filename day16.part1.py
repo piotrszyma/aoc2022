@@ -66,7 +66,6 @@ def get_openable_neighbours(
 def read_valves() -> dict[str, Valve]:
     valves: dict[str, Valve] = {}
     openable_valves_count = 0
-    MINUTES_TOTAL = 30
 
     with open("day16.input.test.txt", "r") as f:
         for line in f:
@@ -116,15 +115,19 @@ def main():
 
         new_valves[valve_name] = valve
 
+    visited: set[str] = set()
     for valve in new_valves.values():
         for n in valve.leads_to:
+            idx = ",".join(tuple(sorted([valve.name, n])))
+            if idx in visited:
+                continue
+            visited.add(idx)
             other = valves[n]
             other_cost = valve.openable_neighbours_costs[other.name]
             print(
                 f'{valve.name}_{valve.flow_rate} -> {other.name}_{other.flow_rate} [label="{other_cost}"];'
             )
 
-    return
     states = [
         State(
             current_name="AA",
@@ -138,6 +141,7 @@ def main():
     ]
 
     final_states: list[State] = []
+    openable_valves_count = len(new_valves) - 1
 
     while states:
         state = states.pop()
@@ -147,6 +151,7 @@ def main():
             continue
 
         if len(state.opened_names) == openable_valves_count:
+            assert state.minutes_left >= 0
             final_states.append(state)
             continue
 
@@ -162,6 +167,8 @@ def main():
                 state.pressure_total
                 + (state.minutes_left - 1) * current_valve.flow_rate
             )
+
+            assert state.minutes_left - 1 >= 0
             new_states.append(
                 State(
                     current_name=state.current_name,
@@ -181,11 +188,16 @@ def main():
             if state.just_visited == next_valve_name and state.previous_step == "move":
                 continue
 
+            move_cost = current_valve.openable_neighbours_costs[next_valve_name]
+
+            if state.minutes_left - move_cost < 0:
+                continue
+
             new_states.append(
                 State(
                     current_name=next_valve_name,
                     opened_names=state.opened_names,
-                    minutes_left=state.minutes_left - 1,
+                    minutes_left=state.minutes_left - move_cost,
                     pressure_total=state.pressure_total,
                     just_visited=state.current_name,
                     previous_step="move",

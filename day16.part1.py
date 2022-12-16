@@ -13,11 +13,10 @@ class Valve:
     name: str
     flow_rate: int
 
-    openable_neighbours: list["Valve"]
+    neighbours: list["Valve"]
     openable_neighbours_costs: dict[str, int]
 
     leads_to: list[str]
-    leads_to_costs: dict[str, int]
 
 
 @dataclass
@@ -33,32 +32,38 @@ class State:
 
 
 def get_openable_neighbours(
-    valves: dict[str, Valve], valve: Valve, visited_names=set()
-) -> list[tuple[Valve, int]]:
+    valve: Valve,
+    is_root: bool,
+    visited_names: set[str] = set(),
+) -> dict[str, int]:
 
-    openable_neighbours = []
+    if (valve.flow_rate > 0 or valve.name == "AA") and not is_root:
+        return {}
 
-    for other_valve in valve.openable_neighbours:
+    neighbours_to_cost: dict[str, int] = {}
+
+    if valve.name in visited_names:
+        return {}
+
+    for other_valve in valve.neighbours:
         if other_valve.name in visited_names:
             continue
 
-        if other_valve.flow_rate > 0:
-            openable_neighbours.append((other_valve, 1))
+        if other_valve.flow_rate > 0 or other_valve.name == "AA":
+            neighbours_to_cost[other_valve.name] = 1
             continue
 
-        # other_valve.flow_rate == 0
-
         other_neighbours = get_openable_neighbours(
-            valves, other_valve, visited_names={*visited_names, valve.name}
+            other_valve, visited_names={*visited_names, valve.name}, is_root=False
         )
 
-        for n_valve, cost in other_neighbours:
-            openable_neighbours.append((n_valve, cost + 1))
+        for other_neighbour_name, cost in other_neighbours.items():
+            neighbours_to_cost[other_neighbour_name] = cost + 1
 
-    return openable_neighbours
+    return neighbours_to_cost
 
 
-def main():
+def read_valves() -> dict[str, Valve]:
     valves: dict[str, Valve] = {}
     openable_valves_count = 0
     MINUTES_TOTAL = 30
@@ -79,29 +84,47 @@ def main():
             valves[name] = Valve(
                 name,
                 flow_rate=rate,
-                openable_neighbours=[],
+                neighbours=[],
                 openable_neighbours_costs={},
                 leads_to=leads_to,
-                leads_to_costs={},
             )
 
             if rate > 0:
                 openable_valves_count += 1
+    return valves
 
-    # for name, valve in valves.items():
-    #     valve.openable_neighbours = [valves[name] for name in valve.leads_to]
 
-    # for name, valve in valves.items():
-    #     openable_neighbours = get_openable_neighbours(valves, valve)
-    #     valve.openable_neighbours = [n for n, _ in openable_neighbours]
-    #     valve.openable_neighbours_costs = {
-    #         n.name: cost for (n, cost) in openable_neighbours
-    #     }
+def main():
+    valves: dict[str, Valve] = read_valves()
+    MINUTES_TOTAL = 30
 
-    # valves = {
-    #     name: v for name, v in valves.items() if v.flow_rate > 0 or v.name == "AA"
-    # }
+    for name, valve in valves.items():
+        valve.neighbours = [valves[name] for name in valve.leads_to]
 
+    all_neighbours: dict[str, dict[str, int]] = {}
+    for name, valve in valves.items():
+        if valve.name == "AA" or valve.flow_rate > 0:
+            openable_neighbours = get_openable_neighbours(valve, is_root=True)
+            all_neighbours[name] = openable_neighbours
+
+    new_valves: dict[str, Valve] = {}
+    for valve_name, neighbours in all_neighbours.items():
+        valve = valves[valve_name]
+        valve.neighbours = list(valves[x] for x in neighbours.keys())
+        valve.openable_neighbours_costs = neighbours
+        valve.leads_to = list(x for x in neighbours.keys())
+
+        new_valves[valve_name] = valve
+
+    for valve in new_valves.values():
+        for n in valve.leads_to:
+            other = valves[n]
+            other_cost = valve.openable_neighbours_costs[other.name]
+            print(
+                f'{valve.name}_{valve.flow_rate} -> {other.name}_{other.flow_rate} [label="{other_cost}"];'
+            )
+
+    return
     states = [
         State(
             current_name="AA",

@@ -178,7 +178,7 @@ def main():
 
     minutes_left = 30
     current_name = "AA"
-    opened = set()
+    opened = set(["AA"])
     path = []
     total_disposed = 0
     while minutes_left > 0:

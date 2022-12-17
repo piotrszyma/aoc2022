@@ -1,6 +1,7 @@
 # Day 16
 import re
 from dataclasses import dataclass
+from typing import TypeAlias
 
 
 RE_LINE = re.compile(
@@ -16,7 +17,7 @@ class Valve:
     neighbours: list["Valve"]
     openable_neighbours_costs: dict[str, int]
 
-    leads_to: list[str]
+    all_neighbour_names: list[str]
 
 
 @dataclass
@@ -85,7 +86,7 @@ def read_valves() -> dict[str, Valve]:
                 flow_rate=rate,
                 neighbours=[],
                 openable_neighbours_costs={},
-                leads_to=leads_to,
+                all_neighbour_names=leads_to,
             )
 
             if rate > 0:
@@ -93,12 +94,9 @@ def read_valves() -> dict[str, Valve]:
     return valves
 
 
-def main():
-    valves: dict[str, Valve] = read_valves()
-    MINUTES_TOTAL = 30
-
+def simplify_graph(valves: dict[str, Valve]) -> dict[str, Valve]:
     for name, valve in valves.items():
-        valve.neighbours = [valves[name] for name in valve.leads_to]
+        valve.neighbours = [valves[name] for name in valve.all_neighbour_names]
 
     all_neighbours: dict[str, dict[str, int]] = {}
     for name, valve in valves.items():
@@ -111,13 +109,63 @@ def main():
         valve = valves[valve_name]
         valve.neighbours = list(valves[x] for x in neighbours.keys())
         valve.openable_neighbours_costs = neighbours
-        valve.leads_to = list(x for x in neighbours.keys())
+        valve.all_neighbour_names = list(x for x in neighbours.keys())
 
         new_valves[valve_name] = valve
 
+    return new_valves
+
+
+ValveName: TypeAlias = str
+Cost: TypeAlias = int
+
+
+def find_best_next(
+    valves: dict[str, Valve],
+    current_name: str,
+):
+    to_visit = [valves[current_name]]
+    visited: set[ValveName] = set()
+    valve_name_to_cost: dict[ValveName, Cost] = {}
+
+    while to_visit:
+        # print(f"{[x.name for x in to_visit]=}")
+        # print(f"{list(visited)=}")
+        curr = to_visit.pop(0)
+        if curr.name in visited:
+            continue
+        assert curr.name not in visited
+        # print(f"{curr.name=}")
+        visited.add(curr.name)
+
+        for neighbour in curr.neighbours:
+            if neighbour.name in visited:
+                continue
+
+            visited.add(curr.name)
+            to_visit.append(neighbour)
+
+            if neighbour.name in valve_name_to_cost:
+                continue
+                # breakpoint()
+                # breakpoint()
+
+            valve_name_to_cost[neighbour.name] = curr.openable_neighbours_costs[
+                neighbour.name
+            ] + valve_name_to_cost.get(curr.name, 0)
+
+    return valve_name_to_cost
+
+
+def main():
+    valves: dict[str, Valve] = read_valves()
+    MINUTES_TOTAL = 30
+
+    valves = simplify_graph(valves)
+
     visited: set[str] = set()
-    for valve in new_valves.values():
-        for n in valve.leads_to:
+    for valve in valves.values():
+        for n in valve.all_neighbour_names:
             idx = ",".join(tuple(sorted([valve.name, n])))
             if idx in visited:
                 continue
@@ -125,8 +173,42 @@ def main():
             other = valves[n]
             other_cost = valve.openable_neighbours_costs[other.name]
             print(
-                f'{valve.name}_{valve.flow_rate} -> {other.name}_{other.flow_rate} [label="{other_cost}"];'
+                f'{valve.name}_{valve.flow_rate} -- {other.name}_{other.flow_rate} [label="{other_cost}"];'
             )
+
+    minutes_left = 30
+    current_name = "AA"
+    opened = set()
+    path = []
+    total_disposed = 0
+    while minutes_left > 0:
+        costs_to_get = find_best_next(valves, current_name)
+        costs_to_get_valves = (
+            (valves[name], cost_to_get)
+            for (name, cost_to_get) in costs_to_get.items()
+            if name not in opened
+        )
+        effect_per_valves = tuple(
+            (v.name, ((minutes_left - cost - 1) * v.flow_rate))
+            for v, cost in costs_to_get_valves
+        )
+
+        if len(effect_per_valves) == 0:
+            break
+
+        name, max_effect = max(effect_per_valves, key=lambda e: e[1])
+
+        if costs_to_get[name] + 1 > minutes_left:
+            break
+
+        total_disposed += max_effect
+        opened.add(name)
+        minutes_left -= costs_to_get[name] + 1
+        path.append(name)
+        current_name = name
+
+    print(f"{total_disposed=} {path=}")
+    return
 
     states = [
         State(

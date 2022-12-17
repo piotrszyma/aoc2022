@@ -136,23 +136,15 @@ def debug_print(chamber: set[Point]):
 
 
 CHAMBER_WIDTH = 7
-TARGET_ROCK_NO = 1000000000000
+TARGET_ROCK_NO = 2022
 SHAPES_COUNT = 5
 
 
 def main():
     moves_pattern = []
-    with open("day17.input.test.txt", "r") as f:
+    with open("day17.input.txt", "r") as f:
         for line in f:
             moves_pattern.extend(list(line.strip()))
-
-    cyclic_after = 5 * len(moves_pattern)
-    needed_no_rocks = TARGET_ROCK_NO
-    num_full_cycles = needed_no_rocks // cyclic_after
-    num_over_full_cycles = needed_no_rocks - (cyclic_after * num_full_cycles)
-    in_full_cycle = None
-    in_over_full_cycle = None
-    # extra_rocks_needed =
 
     chamber = set()  # Stores rocks that don't move anymore.
 
@@ -206,20 +198,8 @@ def main():
             chamber = add_shape_to_chamber(chamber, shape_pos, shape_items_relative)
             # and move forward to next shape.
             break
-
-        if rock_no == num_over_full_cycles:
-            in_over_full_cycle = chamber_height(chamber)
-
-        if rock_no == num_full_cycles:
-            print("a")
-            in_full_cycle = chamber_height(chamber)
-            rock_no = TARGET_ROCK_NO
-
-    assert in_full_cycle is not None
-    assert in_over_full_cycle is not None
-
-    height = in_full_cycle * num_full_cycles + in_over_full_cycle
-    print(height)
+    highest_y = highest_rock_y(chamber) + 1
+    print(highest_y)
 
 
 if __name__ == "__main__":

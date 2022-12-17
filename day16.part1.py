@@ -120,7 +120,7 @@ ValveName: TypeAlias = str
 Cost: TypeAlias = int
 
 
-def find_best_next(
+def get_costs_to_get(
     valves: dict[str, Valve],
     current_name: str,
 ):
@@ -182,7 +182,7 @@ def main():
     path = []
     total_disposed = 0
     while minutes_left > 0:
-        costs_to_get = find_best_next(valves, current_name)
+        costs_to_get = get_costs_to_get(valves, current_name)
         costs_to_get_valves = (
             (valves[name], cost_to_get)
             for (name, cost_to_get) in costs_to_get.items()
@@ -209,93 +209,6 @@ def main():
 
     print(f"{total_disposed=} {path=}")
     return
-
-    states = [
-        State(
-            current_name="AA",
-            opened_names=set(),
-            minutes_left=MINUTES_TOTAL,
-            pressure_total=0,
-            just_visited="",
-            previous_step="",
-            visited_without_open=set(),
-        )
-    ]
-
-    final_states: list[State] = []
-    openable_valves_count = len(new_valves) - 1
-
-    while states:
-        state = states.pop()
-
-        if state.minutes_left == 0:
-            final_states.append(state)
-            continue
-
-        if len(state.opened_names) == openable_valves_count:
-            assert state.minutes_left >= 0
-            final_states.append(state)
-            continue
-
-        new_states = []
-
-        current_valve = valves[state.current_name]
-
-        is_current_opened = state.current_name in state.opened_names
-
-        if not is_current_opened and current_valve.flow_rate > 0:  # Case when opening.
-            new_opened = {*state.opened_names, state.current_name}
-            new_total = (
-                state.pressure_total
-                + (state.minutes_left - 1) * current_valve.flow_rate
-            )
-
-            assert state.minutes_left - 1 >= 0
-            new_states.append(
-                State(
-                    current_name=state.current_name,
-                    opened_names=new_opened,
-                    minutes_left=state.minutes_left - 1,
-                    pressure_total=new_total,
-                    just_visited=state.just_visited,
-                    previous_step="open",
-                    visited_without_open=set(),
-                )
-            )
-
-        for next_valve_name in current_valve.leads_to:
-            if next_valve_name in state.visited_without_open:
-                continue
-
-            if state.just_visited == next_valve_name and state.previous_step == "move":
-                continue
-
-            move_cost = current_valve.openable_neighbours_costs[next_valve_name]
-
-            if state.minutes_left - move_cost < 0:
-                continue
-
-            new_states.append(
-                State(
-                    current_name=next_valve_name,
-                    opened_names=state.opened_names,
-                    minutes_left=state.minutes_left - move_cost,
-                    pressure_total=state.pressure_total,
-                    just_visited=state.current_name,
-                    previous_step="move",
-                    visited_without_open={*state.visited_without_open, next_valve_name},
-                )
-            )
-
-        states.extend(new_states)
-
-    max_state = max(final_states, key=lambda s: s.pressure_total)
-
-    # for minute, entry in enumerate(max_state.history):
-    #     print(f"== Minute {minute} ==")
-    #     print(entry)
-
-    print("total", max_state.pressure_total)
 
 
 if __name__ == "__main__":

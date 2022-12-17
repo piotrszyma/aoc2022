@@ -68,7 +68,7 @@ def read_valves() -> dict[str, Valve]:
     valves: dict[str, Valve] = {}
     openable_valves_count = 0
 
-    with open("day16.input.test.txt", "r") as f:
+    with open("day16.input.txt", "r") as f:
         for line in f:
             match = RE_LINE.search(line)
             assert match, line
@@ -225,40 +225,79 @@ def get_total_given(
         assert len(effect_per_valves) == 0
         return 0
 
+    effect_per_valves_final = tuple(
+        (name, e)
+        for (name, e) in effect_per_valves
+        if costs_to_get[name] + 1 <= minutes_left
+    )
+    effect_per_valves_el_final = tuple(
+        (name, e)
+        for (name, e) in effect_per_valves_el
+        if costs_to_get_el[name] + 1 <= minutes_left_el
+    )
+
     different_paths = []
 
-    for name, effect_per_valve in effect_per_valves:
-        if costs_to_get[name] + 1 > minutes_left:
-            continue
-
-        for name_el, effect_per_valve_el in effect_per_valves_el:
-            if name_el == name:
-                continue
-
-            if costs_to_get_el[name_el] + 1 > minutes_left_el:
-                continue
-
-            # Let's assume we go to 'name' and elephant goes to 'name_el'
-            new_opened = {*opened, name, name_el}
-            new_minutes_left = minutes_left - (costs_to_get[name] + 1)
+    if len(effect_per_valves_final) == 0:
+        for name_el, effect_per_valve_el in effect_per_valves_el_final:
+            new_opened = {*opened, name_el}
             new_minutes_left_el = minutes_left_el - (costs_to_get_el[name_el] + 1)
-            # print(f"{new_minutes_left_el=} {new_minutes_left=}")
-
+            subtotal = (
+                get_total_given(
+                    valves,
+                    minutes_left=minutes_left,
+                    minutes_left_el=new_minutes_left_el,
+                    current_name=current_name,
+                    current_elephant_name=name_el,
+                    opened=new_opened,
+                )
+                + effect_per_valve_el
+            )
+            different_paths.append(subtotal)
+    elif len(effect_per_valves_el_final) == 0:
+        for name, effect_per_valve in effect_per_valves_final:
+            new_opened = {*opened, name}
+            new_minutes_left = minutes_left - (costs_to_get[name] + 1)
             subtotal = (
                 get_total_given(
                     valves,
                     minutes_left=new_minutes_left,
-                    minutes_left_el=new_minutes_left_el,
+                    minutes_left_el=minutes_left_el,
                     current_name=name,
-                    current_elephant_name=name_el,
+                    current_elephant_name=current_elephant_name,
                     opened=new_opened,
                 )
                 + effect_per_valve
-                + effect_per_valve_el
             )
             different_paths.append(subtotal)
+    else:
+        for name, effect_per_valve in effect_per_valves_final:
+            for name_el, effect_per_valve_el in effect_per_valves_el_final:
+                if name_el == name:
+                    continue
+
+                # Let's assume we go to 'name' and elephant goes to 'name_el'
+                new_opened = {*opened, name, name_el}
+                new_minutes_left = minutes_left - (costs_to_get[name] + 1)
+                new_minutes_left_el = minutes_left_el - (costs_to_get_el[name_el] + 1)
+                # print(f"{new_minutes_left_el=} {new_minutes_left=}")
+
+                subtotal = (
+                    get_total_given(
+                        valves,
+                        minutes_left=new_minutes_left,
+                        minutes_left_el=new_minutes_left_el,
+                        current_name=name,
+                        current_elephant_name=name_el,
+                        opened=new_opened,
+                    )
+                    + effect_per_valve
+                    + effect_per_valve_el
+                )
+                different_paths.append(subtotal)
 
     if not different_paths:
+        CACHE[cache_key] = 0
         return 0
 
     # print(different_paths)

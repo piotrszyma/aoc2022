@@ -68,7 +68,7 @@ def read_valves() -> dict[str, Valve]:
     valves: dict[str, Valve] = {}
     openable_valves_count = 0
 
-    with open("day16.input.test.txt", "r") as f:
+    with open("day16.input.txt", "r") as f:
         for line in f:
             match = RE_LINE.search(line)
             assert match, line
@@ -148,13 +148,56 @@ def get_costs_to_get(
             if neighbour.name in valve_name_to_cost:
                 continue
                 # breakpoint()
-                # breakpoint()
 
             valve_name_to_cost[neighbour.name] = curr.openable_neighbours_costs[
                 neighbour.name
             ] + valve_name_to_cost.get(curr.name, 0)
 
     return valve_name_to_cost
+
+
+def get_total_given(
+    valves: dict[str, Valve],
+    minutes_left: int,
+    current_name: str,
+    opened: set[str],
+) -> int:
+    costs_to_get = get_costs_to_get(valves, current_name)
+    costs_to_get_valves = (
+        (valves[name], cost_to_get)
+        for (name, cost_to_get) in costs_to_get.items()
+        if name not in opened
+    )
+    effect_per_valves = tuple(
+        (v.name, ((minutes_left - cost - 1) * v.flow_rate))
+        for v, cost in costs_to_get_valves
+    )
+
+    if len(effect_per_valves) == 0:
+        return 0
+
+    different_paths = []
+
+    for name, effect_per_valve in effect_per_valves:
+        if costs_to_get[name] + 1 > minutes_left:
+            continue
+
+        # Let's assume we open one named 'name'
+        new_opened = {*opened, name}
+        new_minutes_left = minutes_left - (costs_to_get[name] + 1)
+
+        subtotal = (
+            get_total_given(
+                valves, new_minutes_left, current_name=name, opened=new_opened
+            )
+            + effect_per_valve
+        )
+        different_paths.append(subtotal)
+
+    if not different_paths:
+        return 0
+
+    return max(different_paths)
 
 
 def main():
@@ -181,33 +224,40 @@ def main():
     opened = set(["AA"])
     path = []
     total_disposed = 0
-    while minutes_left > 0:
-        costs_to_get = get_costs_to_get(valves, current_name)
-        costs_to_get_valves = (
-            (valves[name], cost_to_get)
-            for (name, cost_to_get) in costs_to_get.items()
-            if name not in opened
-        )
-        effect_per_valves = tuple(
-            (v.name, ((minutes_left - cost - 1) * v.flow_rate))
-            for v, cost in costs_to_get_valves
-        )
 
-        if len(effect_per_valves) == 0:
-            break
+    total = get_total_given(
+        valves=valves, minutes_left=30, current_name="AA", opened={"AA"}
+    )
 
-        name, max_effect = max(effect_per_valves, key=lambda e: e[1])
+    print(total)
+    return
+    # while minutes_left > 0:
+    #     costs_to_get = get_costs_to_get(valves, current_name)
+    #     costs_to_get_valves = (
+    #         (valves[name], cost_to_get)
+    #         for (name, cost_to_get) in costs_to_get.items()
+    #         if name not in opened
+    #     )
+    #     effect_per_valves = tuple(
+    #         (v.name, ((minutes_left - cost - 1) * v.flow_rate))
+    #         for v, cost in costs_to_get_valves
+    #     )
 
-        if costs_to_get[name] + 1 > minutes_left:
-            break
+    #     if len(effect_per_valves) == 0:
+    #         break
 
-        total_disposed += max_effect
-        opened.add(name)
-        minutes_left -= costs_to_get[name] + 1
-        path.append(name)
-        current_name = name
+    #     name, max_effect = max(effect_per_valves, key=lambda e: e[1])
 
-    print(f"{total_disposed=} {path=}")
+    #     if costs_to_get[name] + 1 > minutes_left:
+    #         break
+
+    #     total_disposed += max_effect
+    #     opened.add(name)
+    #     minutes_left -= costs_to_get[name] + 1
+    #     path.append(name)
+    #     current_name = name
+
+    # print(f"{total_disposed=} {path=}")
     return
 
 

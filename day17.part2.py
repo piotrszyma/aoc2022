@@ -162,6 +162,7 @@ def main():
     moves = iter(get_moves(moves_pattern))
     starting_pattern = ""
     last_checked = 0
+    patterns = {}
 
     for shape in get_next_shape():
         rock_no += 1
@@ -218,21 +219,20 @@ def main():
             # .#.#...
             # .####..
 
+            diff = 50
             size = 5
-            diff = 100
-            if shape_pos.y > diff and starting_pattern == "":
-                y = 0
-                starting_pattern = probe_pattern(chamber, y, size)
-                print(probe_pattern(chamber, y, size + 6))
-                last_checked = y
-            elif shape_pos.y > diff:
-                while last_checked < shape_pos.y - diff:
+
+            if shape_pos.y > diff:
+                while last_checked <= shape_pos.y - diff:
                     y = last_checked
                     current_pattern = probe_pattern(chamber, y, size)
+                    if current_pattern not in patterns:
+                        print(y)
+                        print(current_pattern)
+                        print(f"{rock_no=}")
+                        print("height", chamber_height(chamber))
 
-                    if current_pattern == starting_pattern:
-                        print(f"{y=}")
-                        print(probe_pattern(chamber, y, size + 6))
+                    patterns[current_pattern] = patterns.get(current_pattern, 0) + 1
                     last_checked += 1
 
             # PATTERN CHECKER SECTION END

@@ -1,5 +1,6 @@
 # Day 17
 
+import collections
 from typing import Iterable, NamedTuple
 
 DEBUG = True
@@ -135,44 +136,35 @@ def debug_print(chamber: set[Point]):
         print()
 
 
+def probe_pattern(chamber: set[Point], y_start: int, size: int) -> str:
+    pattern = []
+    for y in range(y_start, y_start + size):
+        row = "".join("#" if (x, y) in chamber else "." for x in range(7))
+        pattern.append(row)
+    return "\n".join(reversed(pattern))
+
+
 CHAMBER_WIDTH = 7
-TARGET_ROCK_NO = 1000000000000
-NUM_SHAPES = 5
+# TARGET_ROCK_NO = 2022
+TARGET_ROCK_NO = 10**12
+SHAPES_COUNT = 5
 
 
 def main():
     moves_pattern = []
-    with open("day17.input.test.txt", "r") as f:
+    with open("day17.input.txt", "r") as f:
         for line in f:
             moves_pattern.extend(list(line.strip()))
-
-    cyclic_after = NUM_SHAPES * len(moves_pattern)
-    needed_no_rocks = TARGET_ROCK_NO
-    num_full_cycles = needed_no_rocks // cyclic_after
-    num_over_full_cycles = needed_no_rocks % cyclic_after
-
-    in_full_cycle = None
-    in_over_full_cycle = 0
-    breakpoint()
-
-    print(f"{num_over_full_cycles=} {cyclic_after=}")
-    # extra_rocks_needed =
 
     chamber = set()  # Stores rocks that don't move anymore.
 
     rock_no = 0
     moves = iter(get_moves(moves_pattern))
+    starting_pattern = ""
+    last_checked = 0
 
     for shape in get_next_shape():
         rock_no += 1
-
-        if rock_no == num_over_full_cycles:
-            in_over_full_cycle = chamber_height(chamber)
-
-        if rock_no == cyclic_after:
-            in_full_cycle = chamber_height(chamber)
-            breakpoint()
-            break
 
         if rock_no == TARGET_ROCK_NO + 1:
             break
@@ -208,22 +200,52 @@ def main():
             collides = does_collide(
                 chamber, shape_pos_after_moving_down, shape_items_relative
             )
+
             if not collides:  # No collides - nothing hit - can move further.
                 shape_pos = shape_pos_after_moving_down
                 continue
+
+            # PATTERN CHECKER SECTION START
+
+            # ...#...
+            # ..###..
+            # ...#...
+            # ..####.
+            # ....###
+            # .#..###
+            # .#.####
+            # .####..
+            # .#.#...
+            # .####..
+
+            size = 5
+            diff = 100
+            if shape_pos.y > diff and starting_pattern == "":
+                y = 0
+                starting_pattern = probe_pattern(chamber, y, size)
+                print(probe_pattern(chamber, y, size + 6))
+                last_checked = y
+            elif shape_pos.y > diff:
+                while last_checked < shape_pos.y - diff:
+                    y = last_checked
+                    current_pattern = probe_pattern(chamber, y, size)
+
+                    if current_pattern == starting_pattern:
+                        print(f"{y=}")
+                        print(probe_pattern(chamber, y, size + 6))
+                    last_checked += 1
+
+            # PATTERN CHECKER SECTION END
 
             # In this case shape after move hit something - so this is final position of shape.
             # Add this shape to chamber
 
             chamber = add_shape_to_chamber(chamber, shape_pos, shape_items_relative)
+
             # and move forward to next shape.
             break
-
-    assert in_full_cycle is not None
-    assert in_over_full_cycle is not None
-
-    height = in_full_cycle * num_full_cycles + in_over_full_cycle
-    print(height)
+    highest_y = highest_rock_y(chamber) + 1
+    print(highest_y)
 
 
 if __name__ == "__main__":

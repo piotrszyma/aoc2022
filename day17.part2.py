@@ -152,7 +152,7 @@ SHAPES_COUNT = 5
 
 def main():
     moves_pattern = []
-    with open("day17.input.txt", "r") as f:
+    with open("day17.input.test.txt", "r") as f:
         for line in f:
             moves_pattern.extend(list(line.strip()))
 
@@ -222,6 +222,7 @@ def main():
             diff = 50
             size = 5
 
+            # TODO: Find cycle.
             if shape_pos.y > diff:
                 while last_checked <= shape_pos.y - diff:
                     y = last_checked
@@ -231,6 +232,10 @@ def main():
                         print(current_pattern)
                         print(f"{rock_no=}")
                         print("height", chamber_height(chamber))
+                        print(set(patterns.values()))
+                        print({k: v for (k, v) in patterns.items() if v < 2})
+                        ones = sum((1 for v in patterns.values() if v == 1))
+                        print(f"{ones=}")
 
                     patterns[current_pattern] = patterns.get(current_pattern, 0) + 1
                     last_checked += 1

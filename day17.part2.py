@@ -1,6 +1,7 @@
 # Day 17
 
 import collections
+from dataclasses import dataclass
 from typing import Iterable, NamedTuple
 
 DEBUG = True
@@ -150,9 +151,23 @@ TARGET_ROCK_NO = 10**12
 SHAPES_COUNT = 5
 
 
+@dataclass
+class PatternOccurrences:
+    count: int = 0
+    first_occurred_at: int = 0
+    last_occurred_at: int = 0
+    at_min_height: int = 0
+    at_height: int = 0
+    first_rock_no: int = 0
+    last_rock_no: int = 0
+
+    def __repr__(self):
+        return f"PatternOccurences<{self.first_occurred_at=},{self.last_occurred_at=},{self.at_min_height=},{self.first_rock_no=},{self.last_rock_no=},{self.at_height=}>"
+
+
 def main():
     moves_pattern = []
-    with open("day17.input.test.txt", "r") as f:
+    with open("day17.input.txt", "r") as f:
         for line in f:
             moves_pattern.extend(list(line.strip()))
 
@@ -160,11 +175,13 @@ def main():
 
     rock_no = 0
     moves = iter(get_moves(moves_pattern))
-    starting_pattern = ""
     last_checked = 0
-    patterns = {}
+    patterns = collections.defaultdict(lambda: PatternOccurrences())
+
+    end_simulation = False
 
     for shape in get_next_shape():
+
         rock_no += 1
 
         if rock_no == TARGET_ROCK_NO + 1:
@@ -220,7 +237,7 @@ def main():
             # .####..
 
             diff = 50
-            size = 5
+            size = 15
 
             # TODO: Find cycle.
             if shape_pos.y > diff:
@@ -228,16 +245,35 @@ def main():
                     y = last_checked
                     current_pattern = probe_pattern(chamber, y, size)
                     if current_pattern not in patterns:
-                        print(y)
-                        print(current_pattern)
-                        print(f"{rock_no=}")
-                        print("height", chamber_height(chamber))
-                        print(set(patterns.values()))
-                        print({k: v for (k, v) in patterns.items() if v < 2})
-                        ones = sum((1 for v in patterns.values() if v == 1))
-                        print(f"{ones=}")
+                        # print(y)
+                        # print(current_pattern)
+                        # print(f"{rock_no=}")
+                        # print("height", chamber_height(chamber))
+                        # print(set(patterns.values()))
+                        # print({k: v for (k, v) in patterns.items() if v.count < 2})
+                        # ones = sum((1 for v in patterns.values() if v.count == 1))
+                        # print(f"{ones=}")
+                        occurrence = patterns[current_pattern]
+                        occurrence.at_min_height = chamber_height(chamber)
+                        occurrence.at_height = chamber_height(chamber)
 
-                    patterns[current_pattern] = patterns.get(current_pattern, 0) + 1
+                        occurrence.first_occurred_at = y
+                        occurrence.last_occurred_at = y
+
+                        occurrence.first_rock_no = rock_no
+                        occurrence.last_rock_no = rock_no
+
+                    if patterns[current_pattern].count == 2:
+                        end_simulation = True
+                        break
+
+                    occurrence = patterns[current_pattern]
+                    occurrence.count += 1
+                    occurrence.last_occurred_at = y
+                    occurrence.last_rock_no = rock_no
+
+                    occurrence.at_height = chamber_height(chamber)
+
                     last_checked += 1
 
             # PATTERN CHECKER SECTION END
@@ -249,8 +285,64 @@ def main():
 
             # and move forward to next shape.
             break
-    highest_y = highest_rock_y(chamber) + 1
-    print(highest_y)
+
+        if end_simulation:
+            break
+
+    pattern_values = tuple(patterns.values())
+
+    # Get cycle start, cycle end.
+    cycle_start = None
+    cycle_end = None
+
+    cycle_start_idx = None
+
+    last_before_first_cycle = None
+    for idx, el in enumerate(pattern_values):
+        if el.first_occurred_at != el.last_occurred_at:
+            cycle_start = el
+            cycle_start_idx = idx
+            last_before_first_cycle = pattern_values[idx - 1]
+            break
+
+    assert last_before_first_cycle
+    assert cycle_start_idx
+
+    cycle_end = pattern_values[-1]
+    assert cycle_end.count == 2
+
+    assert cycle_start
+    assert cycle_end
+
+    cycle_height_inc = cycle_end.at_min_height - cycle_start.at_min_height
+    cycle_rocks_inc = cycle_end.last_rock_no - cycle_start.last_rock_no
+
+    tower_height = last_before_first_cycle.at_min_height
+    rocks_needed = TARGET_ROCK_NO - last_before_first_cycle.last_rock_no
+
+    full_cycles_count = rocks_needed // cycle_rocks_inc
+
+    tower_height += full_cycles_count * cycle_height_inc
+    rocks_needed -= full_cycles_count * cycle_rocks_inc
+
+    previous_pattern = pattern_values[cycle_start.first_occurred_at - 1]
+    for idx in range(cycle_start.first_occurred_at, cycle_end.first_occurred_at):
+        pattern = pattern_values[idx]
+
+        rock_diff = pattern.first_rock_no - previous_pattern.first_rock_no
+        height_diff = pattern.at_min_height - previous_pattern.at_min_height
+
+        tower_height += height_diff
+        rocks_needed -= rock_diff
+
+        if rocks_needed < 0:
+            break
+
+        previous_pattern = pattern
+
+    print(tower_height)
+    # highest_y = highest_rock_y(chamber) + 1
+    # print(highest_y)
 
 
 if __name__ == "__main__":

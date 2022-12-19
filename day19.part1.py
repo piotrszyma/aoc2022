@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from io import TextIOWrapper
 import re
-from typing import Callable, Iterable
+from typing import Iterable
 
 
 @dataclass
@@ -27,16 +27,22 @@ def grouped(items: list[str], size=1) -> Iterable[list[str]]:
         yield items[idx : idx + size]
         idx += size
 
-    yield [*items[idx : idx + size], None][:size]  # pad to `size` with None-s
-
 
 RE_NUMBER = re.compile("\d+")
 
 
 def read_blueprints(f: TextIOWrapper) -> Iterable[Blueprint]:
-    items = [l.strip() for l in f]
-    for blueprint in grouped(items, 6):
-        raw_idx, raw_ore, raw_clay, raw_obsidian, raw_geode, _ = blueprint
+    items = []
+    for l in f:
+        for chunk in l.strip().split("Each"):
+            items.append(chunk)
+
+    for blueprint in grouped(items, 5):
+        try:
+            raw_idx, raw_ore, raw_clay, raw_obsidian, raw_geode = blueprint
+        except:
+            breakpoint()
+            raise
 
         result = RE_NUMBER.findall(raw_idx)
         idx = int(result[0])
@@ -95,6 +101,20 @@ def maximize_goedes(
             final_states.append(state)
             continue
 
+        # if state.obsidian > blueprint.geode_robot.obsidian:
+        #     continue
+
+        # if state.clay > blueprint.obsidian_robot.clay:
+        #     continue
+
+        if state.ore > max(
+            blueprint.ore_robot.ore,
+            blueprint.clay_robot.ore,
+            blueprint.obsidian_robot.ore,
+            blueprint.geode_robot.ore,
+        ):
+            continue
+
         # Decide which robot to build in this minute and add it to state (if can).
 
         if (
@@ -119,13 +139,11 @@ def maximize_goedes(
             )
             new_state.history = (*state.history, (state, "build geode"))
             states.append((blueprint, minutes_left - 1, new_state))
-            continue
 
         if (
             state.ore >= blueprint.obsidian_robot.ore
             and state.clay >= blueprint.obsidian_robot.clay
         ):
-            ...
             # Case when building obsidian robot
             new_state = State(
                 ore=state.ore
@@ -144,7 +162,6 @@ def maximize_goedes(
             )
             new_state.history = (*state.history, (new_state, "build obsidian"))
             states.append((blueprint, minutes_left - 1, new_state))
-            continue
 
         if state.ore >= blueprint.clay_robot.ore:
             ...
@@ -165,9 +182,6 @@ def maximize_goedes(
             new_state.history = (*state.history, (new_state, "build clay"))
             states.append((blueprint, minutes_left - 1, new_state))
 
-            if blueprint.clay_robot.ore > blueprint.ore_robot.ore:
-                continue
-
         if state.ore >= blueprint.ore_robot.ore:
             # Case when building ore robot.
             new_state = State(
@@ -186,9 +200,6 @@ def maximize_goedes(
             new_state.history = (*state.history, (new_state, "build ore"))
             states.append((blueprint, minutes_left - 1, new_state))
 
-            if blueprint.ore_robot.ore > blueprint.clay_robot.ore:
-                continue
-
         # Case when nothing was built in this round - collect resources.
         # Each robot gives +1 resource.
         new_state = State(
@@ -204,19 +215,19 @@ def maximize_goedes(
         )
         new_state.history = (*state.history, (new_state, "build nothing"))
 
-        if new_state.ore > max(
-            blueprint.ore_robot.ore,
-            blueprint.clay_robot.ore,
-            blueprint.obsidian_robot.ore,
-            blueprint.geode_robot.ore,
-        ):
-            continue
+        # if new_state.ore > max(
+        #     blueprint.ore_robot.ore,
+        #     blueprint.clay_robot.ore,
+        #     blueprint.obsidian_robot.ore,
+        #     blueprint.geode_robot.ore,
+        # ):
+        #     continue
 
-        if new_state.clay > blueprint.obsidian_robot.clay:
-            continue
+        # if new_state.clay > blueprint.obsidian_robot.clay:
+        #     continue
 
-        if new_state.obsidian > blueprint.geode_robot.obsidian:
-            continue
+        # if new_state.obsidian > blueprint.geode_robot.obsidian:
+        #     continue
 
         states.append((blueprint, minutes_left - 1, new_state))
 
@@ -224,13 +235,14 @@ def maximize_goedes(
 
 
 def main():
-    with open("day19.input.test.txt", "r") as f:
+    with open("day19.input.txt", "r") as f:
         blueprints = list(read_blueprints(f))
 
     minutes_left = 24
+    quality_levels = 0
 
     for blueprint in blueprints:
-        max_goedes = maximize_goedes(
+        max_state = maximize_goedes(
             blueprint,
             minutes_left=minutes_left,
             state=State(
@@ -245,9 +257,13 @@ def main():
                 minute_left=minutes_left,
             ),
         )
-        print(f"{blueprint.idx=} {max_goedes.geode=}")
+        quality_levels += blueprint.idx * max_state.geode
+        print(f"{blueprint.idx=} {max_state.geode=}")
 
         # print("\n".join(h[1] + " " + str(h[0]) for h in max_goedes.history))
+
+    # 943 too small
+    print(f"{quality_levels=}")
 
 
 if __name__ == "__main__":

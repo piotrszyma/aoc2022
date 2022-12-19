@@ -101,21 +101,26 @@ def maximize_goedes(
             final_states.append(state)
             continue
 
-        # if state.obsidian > blueprint.geode_robot.obsidian:
-        #     continue
+        # print((state.ore, state.clay, state.geode, state.obsidian, minutes_left))
 
-        # if state.clay > blueprint.obsidian_robot.clay:
-        #     continue
-
-        if state.ore > max(
+        obsidian_full = state.obsidian > blueprint.geode_robot.obsidian
+        clay_full = state.clay > blueprint.obsidian_robot.clay
+        ore_full = state.ore > max(
             blueprint.ore_robot.ore,
             blueprint.clay_robot.ore,
             blueprint.obsidian_robot.ore,
             blueprint.geode_robot.ore,
-        ):
+        )
+
+        if ore_full:
+            continue
+
+        if obsidian_full and clay_full and ore_full:
             continue
 
         # Decide which robot to build in this minute and add it to state (if can).
+
+        built = 0
 
         if (
             state.ore >= blueprint.geode_robot.ore
@@ -139,6 +144,7 @@ def maximize_goedes(
             )
             new_state.history = (*state.history, (state, "build geode"))
             states.append((blueprint, minutes_left - 1, new_state))
+            built += 1
 
         if (
             state.ore >= blueprint.obsidian_robot.ore
@@ -162,9 +168,9 @@ def maximize_goedes(
             )
             new_state.history = (*state.history, (new_state, "build obsidian"))
             states.append((blueprint, minutes_left - 1, new_state))
+            built += 1
 
         if state.ore >= blueprint.clay_robot.ore:
-            ...
             # Case when building clay robot
             new_state = State(
                 ore=state.ore
@@ -181,6 +187,7 @@ def maximize_goedes(
             )
             new_state.history = (*state.history, (new_state, "build clay"))
             states.append((blueprint, minutes_left - 1, new_state))
+            built += 1
 
         if state.ore >= blueprint.ore_robot.ore:
             # Case when building ore robot.
@@ -199,6 +206,11 @@ def maximize_goedes(
             )
             new_state.history = (*state.history, (new_state, "build ore"))
             states.append((blueprint, minutes_left - 1, new_state))
+            built += 1
+
+        all_built = built == 4
+        if all_built:
+            continue
 
         # Case when nothing was built in this round - collect resources.
         # Each robot gives +1 resource.

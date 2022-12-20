@@ -43,6 +43,7 @@ def move_node(head: Node, node_to_move: Node, shift: int, size: int) -> Node:
     if shift > 0:
         shift = shift % size
     elif shift < 0:
+        # TODO: fixme
         shift = (shift % size) - 1  # modulo so always positive
 
     assert shift >= 0
@@ -213,6 +214,7 @@ if __name__ == "__main__":
 
     assert to_list(head, size=size) == [1, -3, 2, 3, -2, 0, 4], to_list(head, size=7)
 
+    assert third.value == -3
     head = move_node(head, third, third.value, size)
 
     assert to_list(head, size=size) == [1, 2, 3, -2, -3, 0, 4], to_list(head, size=7)

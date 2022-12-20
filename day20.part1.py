@@ -41,10 +41,10 @@ def move_node(head: Node, node_to_move: Node, shift: int, size: int) -> Node:
     assert node_to_move_old_prev
 
     if shift > 0:
-        shift = shift % size
+        shift = shift % (size - 1)
     elif shift < 0:
         # TODO: fixme
-        shift = (shift % size) - 1  # modulo so always positive
+        shift = shift % (size - 1)  # modulo so always positive
 
     assert shift >= 0
     if shift == 0:
@@ -177,7 +177,8 @@ def main():
     num_2000th = new_nums[(2000 + zero_idx) % len(new_nums)]
     num_3000th = new_nums[(3000 + zero_idx) % len(new_nums)]
     print(f"{num_1000th=} {num_2000th=} {num_3000th=}")
-    print(num_1000th + num_2000th + num_3000th)
+    res = num_1000th + num_2000th + num_3000th
+    print(res)
 
 
 if __name__ == "__main__":

@@ -2,7 +2,6 @@ from dataclasses import dataclass
 import operator
 from typing import Callable, Literal, TypeAlias, Union
 
-
 VarName: TypeAlias = str
 
 
@@ -47,6 +46,9 @@ def main():
 
             left, raw_op, right = raw_expr.split(" ")
 
+            if target_variable == "root":
+                raw_op = "="
+
             match raw_op:
                 case "+":
                     op = operator.add
@@ -56,12 +58,42 @@ def main():
                     op = operator.mul
                 case "/":
                     op = operator.truediv
+                case "=":
+                    op = operator.sub
                 case _:
                     raise ValueError(f"Unexpected operator symbol {raw_op}")
 
             expr_table[target_variable] = CalcExpr(op, (left, right))
 
-    print(calc(expr_table, "root"))
+    def calc_for_val(v: int) -> int:
+        expr_table["humn"] = ValueExpr(value=v)
+        return calc(expr_table, "root")
+
+    val = 10**13  # Some big number.
+    while calc_for_val(val) < 0:
+        val //= 10
+
+    for idx in range(0, len(str(val)) + 1):
+        digits = list(str(val))
+        digit_at_idx = 9
+
+        while True:
+            new_digits = list(digits)
+            new_digits[idx] = str(digit_at_idx)
+            new_arg = int(str("".join(new_digits)))
+            new_res = calc_for_val(new_arg)
+
+            if new_res >= 0:
+                break
+
+            digit_at_idx -= 1
+        new_digits = list(digits)
+        new_digits[idx] = str(digit_at_idx)
+        val = int("".join(new_digits))
+        if new_res == 0:
+            break
+
+    print(val)
 
 
 if __name__ == "__main__":

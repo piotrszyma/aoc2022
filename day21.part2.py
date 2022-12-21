@@ -69,6 +69,8 @@ def main():
         expr_table["humn"] = ValueExpr(value=v)
         return calc(expr_table, "root")
 
+    # Done by checking each digit. Could be done using binary search.
+
     val = 10**13  # Some big number.
     while calc_for_val(val) < 0:
         val //= 10

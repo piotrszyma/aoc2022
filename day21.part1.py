@@ -1,33 +1,6 @@
 from dataclasses import dataclass
 import operator
-
-# Day 21
-
-
 from typing import Callable, Literal, TypeAlias, Union
-
-
-class CalcExpr:
-    def calc(self) -> int:
-        ...
-
-
-class ValueExpr(CalcExpr):
-    def __init__(self, value: int):
-        self.value = value
-
-    def calc(self) -> int:
-        return self.value
-
-
-class MultExpr(CalcExpr):
-    def __init__(self, left: CalcExpr, right: CalcExpr):
-        self.left = left
-        self.right = right
-
-    def calc(self) -> int:
-        return self.left.calc() * self.right.calc()
-
 
 VarName: TypeAlias = str
 

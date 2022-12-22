@@ -59,23 +59,31 @@ def _parse_path(line: str) -> Path:
 
     for group in result:
         if group.isdigit():
-            path.append(int(group))
+            for _ in range(int(group)):
+                path.append(1)
         else:
             path.append(group)
 
     return path
 
-def _invert(dir: Direction) -> Direction:
-    if dir == '>':
-        return '<'
-    if dir == '<':
-        return '>'
-    if dir == '^':
-        return 'v'
-    if dir == 'v':
-        return '^'
+def _get_next_wrapped(
+    points_in_row: dict[int, list[Point]],
+    points_in_col: dict[int, list[Point]],
+    curr_point: Point,
+    dir: Direction,
+) -> Point:
+    curr_row_idx, curr_col_idx = curr_point
 
-    raise ValueError(f'unexpected dir {dir=}')
+    if dir == '>':
+        return points_in_row[curr_row_idx][0]
+    elif dir == '<':
+        return points_in_row[curr_row_idx][-1]
+    elif dir == '^':
+        return points_in_col[curr_col_idx][-1]
+    elif dir == 'v':
+        return points_in_col[curr_col_idx][0]
+    else:
+        raise ValueError("unexpected")
 
 def main():
     fields: dict[Point, str] = {}
@@ -85,9 +93,15 @@ def main():
     points_in_row: DefaultDict[int, list[Point]] = defaultdict(list)
     points_in_col: DefaultDict[int, list[Point]] = defaultdict(list)
 
-    with open("day22.input.test.txt", "r") as f:
+    min_row, max_row = 10**12, -1
+    min_col, max_col = 10**12, -1
+
+    with open("day22.input.txt", "r") as f:
         for row_idx, raw_line in enumerate(f):
-            line = raw_line.strip()
+            min_row = min(min_row, row_idx)
+            max_row = max(max_row, row_idx)
+
+            line = raw_line.strip('\n')
 
             if line == "":
                 continue
@@ -97,6 +111,9 @@ def main():
                 continue
 
             for col_idx, cell in enumerate(line):
+                min_col = min(min_col, col_idx)
+                max_col = max(max_col, col_idx)
+
                 if cell == " ":
                     continue
 
@@ -117,31 +134,40 @@ def main():
     assert path is not None
     assert start is not None
 
-    direction = '>'
-    position = start
+    def _handle_wrap(fields: Fields, pos: Point, dir: Direction) ->tuple[Point, Direction]:
+        next_pos = _get_next_wrapped(points_in_row, points_in_col, pos, dir)
+        on_next_pos = fields.get(next_pos)
+        if on_next_pos is None:
+            raise ValueError("this cannot happen - wrap found on wrap?") # remove if not raised
+        elif on_next_pos == '#':
+            return pos, dir
+        elif on_next_pos == '.':
+            return next_pos, dir
+        else:
+            raise ValueError("unexpected")
 
-    def _move(fields: Fields, steps: int, pos: Point, dir: Direction) -> tuple[Point, Direction]:
+    def debug_print(pos: Point, dir: Direction):
+        for row_idx in range(min_row, max_row + 1):
+            for col_idx in range(min_col, max_col + 1):
+                point = Point(row_idx, col_idx)
+                if point == pos:
+                    val = dir
+                else:
+                    val = fields.get(point, ' ')
+                print(val, end='')
+            print()
+
+
+    def _move(fields: Fields, steps: int, init_pos: Point, init_dir: Direction) -> tuple[Point, Direction]:
+        dir = init_dir
+        pos = init_pos
         for _ in range(steps):
             next_pos = _next_point(pos, dir)
             on_next_pos = fields.get(next_pos)
             if on_next_pos is None:
-                # TODO: Move to other side of pane.
-                ...
+                pos, dir = _handle_wrap(fields, pos, dir)
             elif on_next_pos == '#':
-                dir = _invert(dir) # Invert.
-
-                next_pos = _next_point(pos, dir)
-                on_next_pos = fields.get(next_pos)
-
-                if on_next_pos is None:
-                    # TODO: Move to other side of pane.
-                    ...
-                elif on_next_pos == '#':
-                    continue # Ignore this `steps`.
-                elif on_next_pos == '.':
-                    pos = _next_point(pos, dir)
-                else:
-                    raise ValueError("unexpected")
+                continue
             elif on_next_pos == '.':
                 pos = _next_point(pos, dir)
             else:
@@ -151,6 +177,9 @@ def main():
 
     def _rotate(into: Literal['L', 'R'], dir: Direction) -> Direction:
         return _next_direction(into, dir)
+
+    direction = '>'
+    position = start
 
     for cmd in path:
         if isinstance(cmd, int):
@@ -164,8 +193,14 @@ def main():
             raise ValueError(f"unexpected cmd {cmd=}")
 
 
-    breakpoint()
-    breakpoint()
+    dir_pt = {
+        '>': 0,
+        'v': 1,
+        '<': 2,
+        '^': 3,
+    }
+    row_idx, col_idx = position
+    print((row_idx + 1) * 1000 + 4 * (col_idx + 1) + dir_pt[direction])
 
 
 if __name__ == "__main__":

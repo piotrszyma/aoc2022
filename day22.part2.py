@@ -159,7 +159,39 @@ def generate_all_mapping():
 
     return mapping
 
-MAPPING = generate_all_mapping()
+def generate_all_mapping_test():
+    #               +------+
+    #               |  b   |
+    #               |a   c |
+    #               |      |
+    # +------+------+------+
+    # |   ?  |  a   |      |
+    # | ?    |      |    e |
+    # |   ?  |  d   |      |
+    # +------+------+------+------+
+    #               |      |   e  |
+    #               |d     |    ? |
+    #               |  ?   |  ?   |
+    #               +------+------+
+    a = (1, 1, '<'), (2, 0, '^')
+    b = (0, 2, 'v'), (1, 1, '>')
+    c = (2, 1, 'v'), (3, 0, '>')
+    d = (2, 1, '>'), (0, 2, '>')
+    e = (0, 2, '^'), (3, 0, 'v')
+    f = (0, 1, '<'), (2, 0, '<')
+    g = (0, 1, '^'), (3, 0, '<')
+    size = 4
+
+    mapping = {}
+
+    for x in (a, b, c, d, e, f, g):
+        f, s = x
+        mapping.update(generate_mapping(f, s, size=size))
+        mapping.update(generate_mapping(s, f, size=size))
+
+    return mapping
+
+MAPPING = generate_all_mapping_test()
 
 def _get_next_wrapped_final(
     curr_point: Point,

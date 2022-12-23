@@ -66,17 +66,108 @@ def _parse_path(line: str) -> Path:
 
     return path
 
-def _invert(dir: Direction) -> Direction:
-    if dir == '>':
-        return '<'
-    if dir == '<':
-        return '>'
-    if dir == '^':
-        return 'v'
-    if dir == 'v':
-        return '^'
 
-    raise ValueError(f'unexpected dir {dir=}')
+def build_mapping(
+    dir: Direction,
+    from_: Point,
+    from_inc: Point,
+    into: Point,
+    into_inc: Point,
+    size: int
+    ):
+    fx, fy = from_
+    fxi, fyi = from_inc
+    ix, iy = into
+    ixi, iyi = into_inc
+    mapping = {}
+    for _ in range(size):
+        mapping[(fx, fy, dir)] = (ix, iy)
+        fx += fxi
+        fy += fyi
+        ix += ixi
+        iy += iyi
+    return mapping
+
+def generate_mapping(source: tuple[int, int, str], target: tuple[int, int, str], size=50) -> dict[Point, Point]:
+    row_g_s, col_g_s, dir_s = source
+    row_g_e, col_g_e, dir_e = target
+
+    row_s = row_g_s * size
+    if dir_s == 'v':
+        row_s = row_s + size - 1
+
+    col_s = col_g_s * size
+    if dir_s == '>':
+        col_s = col_s + size - 1
+
+    row_e = row_g_e * size
+    if row_e == 'v':
+        row_e = row_e + size - 1
+
+    col_e = col_g_e * size
+    if col_e == '>':
+        col_e = col_e + size - 1
+
+    mapping = {}
+
+    for _ in range(size):
+        mapping[(row_s, col_s)] = (row_e, col_e)
+        if dir_s in '^v':
+            col_s += 1
+        else:
+            row_s += 1
+
+        if dir_e in '^v':
+            col_e += 1
+        else:
+            row_e += 1
+
+    return mapping
+
+def generate_all_mapping():
+    #        +------+------+
+    #        |  g   |   e  |
+    #        |f     |     d|
+    #        |      |  b   |
+    #        +------+------+
+    #        |      |
+    #        |a    b|
+    #        |      |
+    # +------+------+
+    # |   a  |      |
+    # |f     |     d|
+    # |      |   c  |
+    # +------+------+
+    # |      |
+    # |g    c|
+    # |   e  |
+    # +------+
+    a = (1, 1, '<'), (2, 0, '^')
+    b = (0, 2, 'v'), (1, 1, '>')
+    c = (2, 1, 'v'), (3, 0, '>')
+    d = (2, 1, '>'), (0, 2, '>')
+    e = (0, 2, '^'), (3, 0, 'v')
+    f = (0, 1, '<'), (2, 0, '<')
+    g = (0, 1, '^'), (3, 0, '<')
+
+    mapping = {}
+
+    for x in (a, b, c, d, e, f, g):
+        f, s = x
+        mapping.update(generate_mapping(f, s))
+        mapping.update(generate_mapping(s, f))
+
+    return mapping
+
+MAPPING = generate_all_mapping()
+
+def _get_next_wrapped_final(
+    curr_point: Point,
+) -> Point:
+
+    row_idx, col_idx = MAPPING[(curr_point.row_idx, curr_point.col_idx)]
+    return Point(row_idx=row_idx, col_idx=col_idx)
+
 
 def _get_next_wrapped(
     points_in_row: dict[int, list[Point]],
@@ -84,18 +175,7 @@ def _get_next_wrapped(
     curr_point: Point,
     dir: Direction,
 ) -> Point:
-    curr_row_idx, curr_col_idx = curr_point
-
-    if dir == '>':
-        return points_in_row[curr_row_idx][0]
-    elif dir == '<':
-        return points_in_row[curr_row_idx][-1]
-    elif dir == '^':
-        return points_in_col[curr_col_idx][-1]
-    elif dir == 'v':
-        return points_in_col[curr_col_idx][0]
-    else:
-        raise ValueError("unexpected")
+    return _get_next_wrapped_final(curr_point)
 
 def main():
     fields: dict[Point, str] = {}

@@ -28,9 +28,6 @@ class PlayerState:
     winds: set[Wind]
     time: int
 
-    def get_possible_pos(self, walls: set[tuple[int, int]]) -> tuple[int, int]:
-        ...
-
 def _move_winds(winds: set[Wind], size_x: int, size_y: int) -> tuple[set[Wind], WindPos]:
     new_winds: set[Wind] = set()
     new_wind_pos: WindPos = set()
@@ -111,14 +108,15 @@ def main():
                     winds.add(Wind(dir=dir, pos=(row_idx, col_idx)))
     end = (row_idx, col_idx - 1)
 
-    states = [PlayerState(pos=start, winds=winds, time=1)]
+    states = collections.deque([PlayerState(pos=start, winds=winds, time=1)])
+    # states = [PlayerState(pos=start, winds=winds, time=1)]
 
     size_x, size_y = max_row_idx + 1, max_col_idx + 1
     state = None
     while states:
-        state = states.pop(0)
-        print_debug(walls, state.winds, state.pos, size_x, size_y)
-        input()
+        state = states.popleft()
+        # print_debug(walls, state.winds, state.pos, size_x, size_y)
+        # input()
 
         if state.pos == end:
             break
@@ -127,6 +125,9 @@ def main():
         time = state.time + 1
 
         x, y = state.pos
+        # Stay
+        states.append(PlayerState(state.pos, winds=next_winds, time=time))
+
         # Up
         new_pos = (x-1, y)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start and x - 1 > 0:
@@ -136,9 +137,6 @@ def main():
         new_pos = (x, y-1)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start:
             states.append(PlayerState(new_pos, winds=next_winds, time=time))
-
-        # Stay
-        states.append(PlayerState(state.pos, winds=next_winds, time=time))
 
         # Right
         new_pos = (x, y+1)

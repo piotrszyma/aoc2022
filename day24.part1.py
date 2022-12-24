@@ -1,5 +1,6 @@
 import collections
 from dataclasses import dataclass
+from functools import cached_property
 # Day 24
 class bcolors:
     HEADER = '\033[95m'
@@ -31,7 +32,12 @@ class PlayerState:
     def __hash__(self):
         return hash((self.pos, self.winds))
 
+WINDS_MOVE_CACHE = {}
+
 def _move_winds(winds: frozenset[Wind], size_x: int, size_y: int) -> tuple[frozenset[Wind], WindPos]:
+    if winds in WINDS_MOVE_CACHE:
+        return WINDS_MOVE_CACHE[winds]
+
     new_winds: set[Wind] = set()
     new_wind_pos: WindPos = set()
     for wind in winds:
@@ -58,7 +64,8 @@ def _move_winds(winds: frozenset[Wind], size_x: int, size_y: int) -> tuple[froze
         new_winds.add(Wind(dir=wind.dir, pos=new_pos))
         new_wind_pos.add(new_pos)
 
-    return frozenset(new_winds), new_wind_pos
+    WINDS_MOVE_CACHE[winds] = (frozenset(new_winds), new_wind_pos)
+    return WINDS_MOVE_CACHE[winds]
 
 def print_debug(walls: set[tuple[int, int]], winds: set[Wind], player_pos: tuple[int, int],size_x: int, size_y: int):
     winds_pos = {w.pos for w in winds}
@@ -93,7 +100,6 @@ def main():
     max_col_idx = 0
     max_row_idx = 0
 
-    ct = 0
     with open("day24.input.txt", "r") as f:
         row_idx = -1
         col_idx = -1
@@ -159,6 +165,7 @@ def main():
             states.append(PlayerState(new_pos, winds=next_winds, time=time))
 
     assert state
+    # 210 is too low
     # 350 is too high
     print(state.time)
 

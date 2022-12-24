@@ -1,7 +1,16 @@
 import collections
 from dataclasses import dataclass
 # Day 24
-
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
 
 @dataclass
 class Wind:
@@ -62,7 +71,7 @@ def print_debug(walls: set[tuple[int, int]], winds: set[Wind], player_pos: tuple
         for col_idx in range(size_y):
             pos = (row_idx, col_idx)
             if pos == player_pos:
-                print('P', end='')
+                print(bcolors.OKBLUE + 'P' + bcolors.ENDC, end='')
             elif pos in walls:
                 print('#', end='')
             elif pos in winds_pos:
@@ -84,7 +93,7 @@ def main():
     max_col_idx = 0
     max_row_idx = 0
 
-    with open("day24.input.txt", "r") as f:
+    with open("day24.input.test.txt", "r") as f:
         row_idx = -1
         col_idx = -1
         for row_idx, line in enumerate(f):
@@ -107,9 +116,9 @@ def main():
     size_x, size_y = max_row_idx + 1, max_col_idx + 1
     state = None
     while states:
-        state = states.pop()
-        # print_debug(walls, state.winds, state.pos, size_x, size_y)
-        # input()
+        state = states.pop(0)
+        print_debug(walls, state.winds, state.pos, size_x, size_y)
+        input()
 
         if state.pos == end:
             break
@@ -120,7 +129,7 @@ def main():
         x, y = state.pos
         # Up
         new_pos = (x-1, y)
-        if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start:
+        if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start and x - 1 > 0:
             states.append(PlayerState(new_pos, winds=next_winds, time=time))
 
         # Left

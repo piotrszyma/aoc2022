@@ -28,6 +28,7 @@ class PlayerState:
     pos: tuple[int, int]
     winds: frozenset[Wind]
     time: int
+    # history: list['PlayerState']
 
     def __hash__(self):
         return hash((self.pos, self.winds))
@@ -67,7 +68,7 @@ def _move_winds(winds: frozenset[Wind], size_x: int, size_y: int) -> tuple[froze
     WINDS_MOVE_CACHE[winds] = (frozenset(new_winds), new_wind_pos)
     return WINDS_MOVE_CACHE[winds]
 
-def print_debug(walls: set[tuple[int, int]], winds: set[Wind], player_pos: tuple[int, int],size_x: int, size_y: int):
+def print_debug(walls: set[tuple[int, int]], winds: frozenset[Wind], player_pos: tuple[int, int],size_x: int, size_y: int):
     winds_pos = {w.pos for w in winds}
     all_pos = collections.defaultdict(int)
 
@@ -100,7 +101,7 @@ def main():
     max_col_idx = 0
     max_row_idx = 0
 
-    with open("day24.input.txt", "r") as f:
+    with open("day24.input.test.txt", "r") as f:
         row_idx = -1
         col_idx = -1
         for row_idx, line in enumerate(f):
@@ -119,6 +120,7 @@ def main():
     end = (row_idx, col_idx - 1)
 
     states = collections.deque([PlayerState(pos=start, winds=frozenset(winds), time=1)])
+    state_to_prev = {}
 
     visited_states = set()
 
@@ -135,39 +137,74 @@ def main():
         visited_states.add(state)
 
         if state.pos == end:
+            # end_states = [s for s in (*states, state) if s.pos == end]
+            # # assert len(end_states) == 0
+            # end_time = min(s.time for s in end_states)
+            # # min_time = min(end_times)
+            # breakpoint()
             break
 
         next_winds, new_winds_pos = _move_winds(state.winds, size_x, size_y)
+        # print(len(WINDS_MOVE_CACHE))
         time = state.time + 1
 
         x, y = state.pos
         # Stay
-        states.append(PlayerState(state.pos, winds=next_winds, time=time))
+        prev_state = state
+
+        state = PlayerState(state.pos, winds=next_winds, time=time)
+        states.append(state)
+        state_to_prev[state] = prev_state
 
         # Up
         new_pos = (x-1, y)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start and x - 1 > 0:
-            states.append(PlayerState(new_pos, winds=next_winds, time=time))
+            state = PlayerState(new_pos, winds=next_winds, time=time)
+            state_to_prev[state] = prev_state
+            states.append(state)
 
         # Left
         new_pos = (x, y-1)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start:
-            states.append(PlayerState(new_pos, winds=next_winds, time=time))
+            state = PlayerState(new_pos, winds=next_winds, time=time)
+            state_to_prev[state] = prev_state
+            states.append(state)
 
         # Right
         new_pos = (x, y+1)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start:
-            states.append(PlayerState(new_pos, winds=next_winds, time=time))
+            state = PlayerState(new_pos, winds=next_winds, time=time)
+            state_to_prev[state] = prev_state
+            states.append(state)
 
         # Down
         new_pos = (x+1, y)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start:
-            states.append(PlayerState(new_pos, winds=next_winds, time=time))
+            state = PlayerState(new_pos, winds=next_winds, time=time)
+            state_to_prev[state] = prev_state
+            states.append(state)
 
     assert state
     # 210 is too low
     # 350 is too high
     print(state.time)
+    print(len(WINDS_MOVE_CACHE))
+
+    curr_state = state
+    states = [curr_state]
+    while True:
+        prev_state = state_to_prev.get(curr_state)
+        states.append(curr_state)
+        if prev_state is None:
+            break
+        curr_state = prev_state
+
+    states = reversed(states)
+
+    for s in states:
+        print_debug(walls, s.winds, s.pos, size_x, size_y)
+        input()
+
 
 if __name__ == "__main__":
     ####

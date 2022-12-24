@@ -18,17 +18,20 @@ class Wind:
     pos: tuple[int, int]
 
     def __hash__(self):
-        return hash(self.pos)
+        return hash((self.pos, self.dir))
 
 WindPos = set[tuple[int, int]]
 
 @dataclass
 class PlayerState:
     pos: tuple[int, int]
-    winds: set[Wind]
+    winds: frozenset[Wind]
     time: int
 
-def _move_winds(winds: set[Wind], size_x: int, size_y: int) -> tuple[set[Wind], WindPos]:
+    def __hash__(self):
+        return hash((self.pos, self.winds))
+
+def _move_winds(winds: frozenset[Wind], size_x: int, size_y: int) -> tuple[frozenset[Wind], WindPos]:
     new_winds: set[Wind] = set()
     new_wind_pos: WindPos = set()
     for wind in winds:
@@ -55,7 +58,7 @@ def _move_winds(winds: set[Wind], size_x: int, size_y: int) -> tuple[set[Wind], 
         new_winds.add(Wind(dir=wind.dir, pos=new_pos))
         new_wind_pos.add(new_pos)
 
-    return new_winds, new_wind_pos
+    return frozenset(new_winds), new_wind_pos
 
 def print_debug(walls: set[tuple[int, int]], winds: set[Wind], player_pos: tuple[int, int],size_x: int, size_y: int):
     winds_pos = {w.pos for w in winds}
@@ -90,7 +93,8 @@ def main():
     max_col_idx = 0
     max_row_idx = 0
 
-    with open("day24.input.test.txt", "r") as f:
+    ct = 0
+    with open("day24.input.txt", "r") as f:
         row_idx = -1
         col_idx = -1
         for row_idx, line in enumerate(f):
@@ -108,8 +112,9 @@ def main():
                     winds.add(Wind(dir=dir, pos=(row_idx, col_idx)))
     end = (row_idx, col_idx - 1)
 
-    states = collections.deque([PlayerState(pos=start, winds=winds, time=1)])
-    # states = [PlayerState(pos=start, winds=winds, time=1)]
+    states = collections.deque([PlayerState(pos=start, winds=frozenset(winds), time=1)])
+
+    visited_states = set()
 
     size_x, size_y = max_row_idx + 1, max_col_idx + 1
     state = None
@@ -117,6 +122,11 @@ def main():
         state = states.popleft()
         # print_debug(walls, state.winds, state.pos, size_x, size_y)
         # input()
+
+        if state in visited_states:
+            continue
+
+        visited_states.add(state)
 
         if state.pos == end:
             break

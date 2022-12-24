@@ -88,7 +88,7 @@ def build_mapping(
         iy += iyi
     return mapping
 
-def generate_mapping(source: tuple[int, int, str], target: tuple[int, int, str], size=50) -> dict[Point, Point]:
+def generate_mapping(source: tuple[int, int, str], target: tuple[int, int, str], size=50):
     row_g_s, col_g_s, dir_s = source
     row_g_e, col_g_e, dir_e = target
 
@@ -110,8 +110,20 @@ def generate_mapping(source: tuple[int, int, str], target: tuple[int, int, str],
 
     mapping = {}
 
+    new_dir = None
+    if dir_e == '^':
+        new_dir = 'v'
+    elif dir_e == 'v':
+        new_dir = '^'
+    elif dir_e == '<':
+        new_dir = '>'
+    elif dir_e == '>':
+        new_dir = '<'
+
+    assert new_dir is not None
+
     for _ in range(size):
-        mapping[(row_s, col_s)] = (row_e, col_e)
+        mapping[(row_s, col_s, dir_s)] = (row_e, col_e, new_dir)
         if dir_s in '^v':
             col_s += 1
         else:
@@ -160,26 +172,27 @@ def generate_all_mapping():
     return mapping
 
 def generate_all_mapping_test():
+    #    0      1       2      3
     #               +------+
     #               |  b   |
-    #               |a   c |
+    #               |a   c |         0
     #               |      |
     # +------+------+------+
-    # |   ?  |  a   |      |
-    # | ?    |      |    e |
-    # |   ?  |  d   |      |
+    # |   b  |  a   |      |
+    # | g    |      |    e |         1
+    # |   f  |  d   |      |
     # +------+------+------+------+
     #               |      |   e  |
-    #               |d     |    ? |
-    #               |  ?   |  ?   |
+    #               |d     |    c |  2
+    #               |  f   |  g   |
     #               +------+------+
-    a = (1, 1, '<'), (2, 0, '^')
-    b = (0, 2, 'v'), (1, 1, '>')
-    c = (2, 1, 'v'), (3, 0, '>')
-    d = (2, 1, '>'), (0, 2, '>')
-    e = (0, 2, '^'), (3, 0, 'v')
-    f = (0, 1, '<'), (2, 0, '<')
-    g = (0, 1, '^'), (3, 0, '<')
+    a = (1, 1, '^'), (0, 2, '<')
+    b = (0, 2, '^'), (1, 0, '^')
+    c = (0, 2, '>'), (2, 3, '>')
+    d = (2, 2, '<'), (1, 1, 'v')
+    e = (1, 2, '>'), (2, 3, '^')
+    f = (1, 0, 'v'), (2, 2, 'v')
+    g = (0, 1, '<'), (2, 3, 'v')
     size = 4
 
     mapping = {}
@@ -189,16 +202,19 @@ def generate_all_mapping_test():
         mapping.update(generate_mapping(f, s, size=size))
         mapping.update(generate_mapping(s, f, size=size))
 
+    # breakpoint()
     return mapping
 
+# TODO: replace with final.
 MAPPING = generate_all_mapping_test()
 
 def _get_next_wrapped_final(
     curr_point: Point,
-) -> Point:
+    dir: Direction,
+) -> tuple[Point, Direction]:
 
-    row_idx, col_idx = MAPPING[(curr_point.row_idx, curr_point.col_idx)]
-    return Point(row_idx=row_idx, col_idx=col_idx)
+    row_idx, col_idx, new_dir = MAPPING[(curr_point.row_idx, curr_point.col_idx, dir)]
+    return Point(row_idx=row_idx, col_idx=col_idx), new_dir
 
 
 def _get_next_wrapped(
@@ -206,8 +222,8 @@ def _get_next_wrapped(
     points_in_col: dict[int, list[Point]],
     curr_point: Point,
     dir: Direction,
-) -> Point:
-    return _get_next_wrapped_final(curr_point)
+) -> tuple[Point, Direction]:
+    return _get_next_wrapped_final(curr_point, dir)
 
 def main():
     fields: dict[Point, str] = {}
@@ -220,7 +236,7 @@ def main():
     min_row, max_row = 10**12, -1
     min_col, max_col = 10**12, -1
 
-    with open("day22.input.txt", "r") as f:
+    with open("day22.input.test.txt", "r") as f:
         for row_idx, raw_line in enumerate(f):
             min_row = min(min_row, row_idx)
             max_row = max(max_row, row_idx)
@@ -259,14 +275,14 @@ def main():
     assert start is not None
 
     def _handle_wrap(fields: Fields, pos: Point, dir: Direction) ->tuple[Point, Direction]:
-        next_pos = _get_next_wrapped(points_in_row, points_in_col, pos, dir)
+        next_pos, new_dir = _get_next_wrapped(points_in_row, points_in_col, pos, dir)
         on_next_pos = fields.get(next_pos)
         if on_next_pos is None:
             raise ValueError("this cannot happen - wrap found on wrap?") # remove if not raised
         elif on_next_pos == '#':
             return _handle_wall(fields, pos, dir, from_wrap=True)
         elif on_next_pos == '.':
-            return next_pos, dir
+            return next_pos, new_dir
         else:
             raise ValueError("unexpected")
 
@@ -338,6 +354,8 @@ def main():
     position = start
 
     for cmd in path:
+        debug_print(position, direction)
+        input()
         if isinstance(cmd, int):
             steps = cmd
             position, direction = _move(fields, steps, position, direction)

@@ -68,30 +68,33 @@ def _move_winds(winds: frozenset[Wind], size_x: int, size_y: int) -> tuple[froze
     WINDS_MOVE_CACHE[winds] = (frozenset(new_winds), new_wind_pos)
     return WINDS_MOVE_CACHE[winds]
 
-def print_debug(walls: set[tuple[int, int]], winds: frozenset[Wind], player_pos: tuple[int, int],size_x: int, size_y: int):
+def print_debug(walls: set[tuple[int, int]], winds: frozenset[Wind], player_pos: set[tuple[int, int]],size_x: int, size_y: int):
     winds_pos = {w.pos for w in winds}
     all_pos = collections.defaultdict(int)
 
     for wind in winds:
         all_pos[wind.pos] += 1
 
+    buffer: list[str] = []
+
     for row_idx in range(size_x):
         for col_idx in range(size_y):
             pos = (row_idx, col_idx)
-            if pos == player_pos:
-                print(bcolors.OKBLUE + 'P' + bcolors.ENDC, end='')
+            if pos in player_pos:
+                buffer.append(bcolors.OKBLUE + 'E' + bcolors.ENDC)
             elif pos in walls:
-                print('#', end='')
+                buffer.append('#')
             elif pos in winds_pos:
                 count = all_pos[pos]
                 if count > 1:
-                    print(count, end='')
+                    buffer.append(str(count))
                 else:
                     wind = [w for w in winds if w.pos == pos][0]
-                    print(wind.dir, end='')
+                    buffer.append(wind.dir)
             else:
-                print('.', end='')
-        print("")
+                buffer.append(bcolors.OKGREEN + '.' + bcolors.ENDC)
+        buffer.append("\n")
+    print("".join(buffer))
 
 def main():
     walls: set[tuple[int, int]] = set()
@@ -152,16 +155,17 @@ def main():
         # Stay
         prev_state = state
 
-        state = PlayerState(state.pos, winds=next_winds, time=time)
-        states.append(state)
-        state_to_prev[state] = prev_state
-
         # Up
         new_pos = (x-1, y)
         if new_pos not in new_winds_pos and new_pos not in walls and new_pos != start and x - 1 > 0:
             state = PlayerState(new_pos, winds=next_winds, time=time)
             state_to_prev[state] = prev_state
             states.append(state)
+
+
+        state = PlayerState(state.pos, winds=next_winds, time=time)
+        states.append(state)
+        state_to_prev[state] = prev_state
 
         # Left
         new_pos = (x, y-1)
@@ -187,7 +191,7 @@ def main():
     assert state
     # 210 is too low
     # 350 is too high
-    print(state.time)
+    print(f"{state.time=}")
     print(len(WINDS_MOVE_CACHE))
 
     curr_state = state
@@ -201,9 +205,14 @@ def main():
 
     states = reversed(states)
 
+    # breakpoint()
+    all_pos = set()
     for s in states:
-        print_debug(walls, s.winds, s.pos, size_x, size_y)
-        input()
+        all_pos.add(s.pos)
+        if s.time % 1 == 0:
+            print("minute", s.time)
+            print_debug(walls, s.winds, {s.pos}, size_x, size_y)
+            # input()
 
 
 if __name__ == "__main__":
